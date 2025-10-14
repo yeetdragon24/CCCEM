@@ -794,7 +794,7 @@ Game.registerMod('CCCEMContainer', {
   }
     })
 
-var cccemDir = windows.locally_hosted?'./':'https://cursedsliver.github.io/CCCEM/';
+var cccemDir = window.locally_hosted?'./':'https://cursedsliver.github.io/CCCEM/';
 if (Game.ready && !l('topbarFrenzy')) {
   pureWriteSave=false;
   Game.LoadMod(cccemDir+"cccemInterface.js");
