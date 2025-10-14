@@ -16907,5 +16907,17 @@ window.onload=function()
 		if (App && !lang) showLangSelect(loadLangAndLaunch);
 		else if (!lang) {loadLangAndLaunch('EN',true);}
 		else loadLangAndLaunch(lang);
+
+		window.locally_hosted = true;
+		setTimeout(() => { 
+			Game.LoadMod('./cccem.js');
+			/*Game.LoadMod('./macadamia.js'); 
+			const interval = setInterval(() => {
+				if (typeof Macadamia !== 'undefined') {
+					Game.LoadMod('./cccem.js'); 
+				}
+			}, 50);*/
+		}, 500);
+		//http://127.0.0.1:5500
 	}
 };

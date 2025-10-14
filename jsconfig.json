@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "checkJs": false,
+    "allowJs": true,
+    "baseUrl": ".",
+    "noImplicitAny": false,
+    "typeRoots": ["./types", "./node_modules/@types"]
+  },
+  "include": [
+    "types/**/*"
+  ],
+  "exclude": [
+    "main.js",
+    "minigameGarden.js",
+    "minigameMarket.js",
+    "minigamePantheon.js",
+    "minigameGrimoire.js",
+    "img",
+    "snd",
+    "node_modules"
+  ]
+}

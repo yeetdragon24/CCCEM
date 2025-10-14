@@ -1,10 +1,3 @@
-/**
-*
-*  Base64 encode / decode
-*  http://www.webtoolkit.info/
-*
-**/
- 
 var Base64 = {
  
 	// private property
