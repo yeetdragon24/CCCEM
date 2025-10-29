@@ -29,13 +29,14 @@
 //version 2.5: added integration with multiplayer (red's Macadamia mod loader), as well as options to adjust gc spawn rates for the upcoming cookie clicker combo execution competitoi
 //version 2.51: made news ticker automatically scroll upon trying again, and added the ability to scroll in the opposite direction using ctrl clicking scrollable options
 //version 2.52: added option to change garden level (garden size)
-//version 2.53: added ability to adjust starting season for the builtin cast getter 
+//version 2.53: added ability to adjust starting season for the builtin cast getter
+//version 2.54: fixed a minor bug with importing saves that had elder covenant
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 //The "non-real" cccemver is for detecting whether to wipe settings
 var CCCEMVer = 'v2.53';
-var CCCEMVerReal = 'v2.53';
+var CCCEMVerReal = 'v2.54';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -423,7 +424,7 @@ function ResetGame(toFindRaw) {
   Game.Upgrades['Sugar frenzy'].bought=boughtSF;
   Game.popups=0
   if (setSeason!=0) Game.UpgradesById[setSeason].earn(); else { Game.UpgradesById[182].clickFunction();Game.UpgradesById[183].clickFunction();Game.UpgradesById[184].clickFunction();Game.UpgradesById[185].clickFunction();Game.UpgradesById[209].clickFunction(); Game.season = ""; }
-  if (setPledge!=false) Game.UpgradesById[74].earn();
+  if (setPledge!=false) Game.UpgradesById[85].earn(); Game.UpgradesById[74].earn();
   if (!Game.Has('Golden switch [on]')) {Game.UpgradesById[332].earn();Game.UpgradesById[331].bought = 0;}
   Game.seasonUses=0;
   Game.upgradesToRebuild=1;
