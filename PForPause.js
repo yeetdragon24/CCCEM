@@ -5,6 +5,7 @@
 //version 2.1 fixed various bugs and overlooked elements, integrated time slow to all minigames, big cookie clicks no longer act silly at high gamespeeds 
 //version 2.11 added multiplayer support (macadamia port)
 //version 2.111 added try catch block
+//version 2.12 fixed issue with the mod removing a button from CCCEMUI
 
 var gamePause=0
 var gardenStepDifference=Game.Objects.Farm.minigame?(Game.Objects.Farm.minigame.nextStep-Date.now()):0
@@ -133,6 +134,9 @@ AddEvent(window,'keyup',function(e){
 if (!(typeof CCCEMUILoaded === 'undefined')) {
     UpdatePForPB=function() {
         for (var i in moreButtons) {for (var ii in pForPauseButtons) {moreButtons[i].splice(moreButtons[i].indexOf(pForPauseButtons),1)}}
+        CreatePForPB();
+        }
+    CreatePForPB=function() {
         pForPauseButtons[0]='<div class="line"></div>'
         pForPauseButtons[1]='<a class="option neato'+(gamePause?'orange':'yellow')+'" '+Game.clickStr+'="PauseGame(); UpdatePForPB(); RedrawCCCEM();">'+(gamePause?'Unpause':'Pause')+'</a>'
         pForPauseButtons[2]='<a class="option neato" '+Game.clickStr+'="TickStep();">Tick step</a><br>'
@@ -141,12 +145,11 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
         pForPauseButtons[5]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=3; notifyKeyBind();">Reset: '+pForPause[2][1]+'</a><br>'
         pForPauseButtons[6]='<a class="option neatocyan" '+Game.clickStr+'="PForPBGetPrompt();">Gamespeed multiplier: '+timeFactorWhenEnabled+'</a>'
         pForPauseButtons[7]='<a class="option neatoblue" '+Game.clickStr+'="if (pForPause[3][0] == 0) { NewKeyBind(-1, 3); PForPause.changeGameSpeed(timeFactorWhenEnabled); } else { changeKeyBind=4; notifyKeyBind(true); } UpdatePForPB(); RedrawCCCEM();">Trigger method: '+pForPause[3][1]+'</a>'
-
         PForPauseButtons();
         RedrawCCCEM();
-        }
+        };
     AddEvent(window,'keydown',function(e){if (changeKeyBind) {NewKeyBind(e.keyCode, changeKeyBind-1)} else if (e.keyCode==pForPause[2][0]) {ResetAll(1)};});
-    UpdatePForPB();
+    CreatePForPB();
     };
 
 var PForPause = null;
