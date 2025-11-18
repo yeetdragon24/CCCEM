@@ -16,6 +16,7 @@
 //version 2.43: added the ability to hide sections of the interface; interface is now divided into 4 sections with two additional sections for when P for Pause and Cast Finder is loaded
 //version 2.44: added orange and blue colored buttons; orange for the alternate state for on/off toggles, while blues for cycling toggles; added auto saving, which is just vanilla's auto saving, but for CCCEM settings only
 //version 2.45: added integration for the new Cast Finder buttons (pre-loading related)
+//version 2.46: Added devastatedness and fixed issue with turning on and off natural golden cookies removing p for pause UI elements
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -26,6 +27,8 @@ var maxComboPow=1
 var relComboPow=1
 var maxBSCount=0
 var maxGodz=1
+var devastatedness=0
+var maxUndevastated=0
 var iniRaw=1
 var tickerCount=0
 var buildingSelected=0;
@@ -45,7 +48,8 @@ var invalidateScore=0
 
 if (typeof CCCEMUILoaded === 'undefined') {
   var CCCEMUILoaded=1
-  
+  Game.registerHook('click', () => {Devastate();}); //calculates devastatedness when you click
+
   //prevents you from using OpenSesame as this mod removes the debugLog to make it look nice, which breaks the game if you run OpenSesame.
   eval("Game.OpenSesame="+Game.OpenSesame.toString().replace("var str='';","return")) 
   if (l('debugLog')) {l('debugLog').remove();};
@@ -62,7 +66,7 @@ if (typeof CCCEMUILoaded === 'undefined') {
   eval("Game.updateShimmers="+Game.updateShimmers.toString().replace("me.time++;","me.time++; if (seedNats) {Math.seedrandom(Game.seed+'/'+(i=='golden'?Game.goldenClicks:Game.reindeerClicked)+'/'+me.time);};")) 
   
   //find combo multipliers when a buff or golden cookie dies
-    eval("Game.shimmer.prototype.die="+Game.shimmer.prototype.die.toString().replace("Game.shimmersL.removeChild(this.l);","if (!isClickedGC) {FindMaxComboPow()}; isClickedGC=false; Game.shimmersL.removeChild(this.l);"))
+  eval("Game.shimmer.prototype.die="+Game.shimmer.prototype.die.toString().replace("Game.shimmersL.removeChild(this.l);","if (!isClickedGC) {FindMaxComboPow()}; isClickedGC=false; Game.shimmersL.removeChild(this.l);"))
   eval("Game.updateBuffs="+Game.updateBuffs.toString().replace("if (buff.onDie) buff.onDie();","if (buff.onDie) buff.onDie(); FindMaxComboPow();"))
   };
 
@@ -73,10 +77,11 @@ function FortuneTicker(manual) {
   return (Math.random()<forceFortune)
   };
 
-function FindAuraP(a1, a2) {
+function FindAuraP(a1, a2) { //finds the strength of the a1 aura in the case that a2 is also slotted
+  if (a1 == 15) {return 2}
+  if (!a2) {a2=0};
   var auraSlot1=Game.dragonAura
   var auraSlot2=Game.dragonAura2
-  if (!a2) {if (auraSlot1==3 || auraSlot2==3) {a2=3} else {a2=0};};
   Game.dragonAura=0
   Game.dragonAura2=a2
   Game.CalculateGains();
@@ -88,6 +93,39 @@ function FindAuraP(a1, a2) {
   Game.dragonAura2=auraSlot2
   Game.recalculateGains=1
   return yesA1/noA1
+  };
+
+
+function Devastate() {
+  var devastation = Game.buffs.Devastation?Game.buffs.Devastation.multClick:1
+  devastatedness+=FindUndevastated()*devastation
+  };
+
+function NormalizeDevastatedness() {
+  return devastatedness/(maxUndevastated?maxUndevastated:1)
+  };
+
+function FindUndevastated() { //calculates combo power based on non-devastation factors
+  var cComboPow=1; 
+  for (var i in Game.buffs) {
+    var buff=Game.buffs[i]; 
+    if (buff.multCpS) {
+      cComboPow*=buff.multCpS; 
+      };
+    if (buff.multClick) {
+      if (buff.name=='Devastation') {continue};
+      cComboPow*=buff.multClick
+      };
+    };
+  if (Game.dragonAura == 16 || Game.dragonAura2 == 16) {
+    if (Game.shimmerTypes['golden'].n>0) {
+      cComboPow*=Math.pow(2.23, Game.shimmerTypes['golden'].n); 
+      };
+    var corAura = useEB?15:1; 
+    cComboPow/=FindAuraP(corAura);
+    };
+  if (maxUndevastated<cComboPow) {maxUndevastated=cComboPow}
+  return cComboPow
   };
 
 function FindMaxComboPow() {
@@ -116,7 +154,11 @@ function FindMaxComboPow() {
       if (ConsistentBuffs(buff.type.name)) {rComboPow*=buff.multClick;};
       };
     };
-  if (Game.shimmerTypes['golden'].n>0) {mComboPow*=Math.pow(2.23, Game.shimmerTypes['golden'].n); mComboPow/=FindAuraP(1);};
+  if (Game.shimmerTypes['golden'].n>0) {
+    mComboPow*=Math.pow(2.23, Game.shimmerTypes['golden'].n); 
+    var corAura = useEB?15:1; 
+    mComboPow/=FindAuraP(corAura);
+    };
   if (maxComboPow<mComboPow) {maxComboPow=mComboPow; relComboPow=rComboPow; maxBSCount=bsCount; maxGodz=godzPow}; 
   };
 
@@ -184,9 +226,12 @@ function PrintScore() {
   else if (score>0.1) {icon=[1,5]}
   else if (score>0.01) {icon=[0,5]}
   else if (score>0) {icon=[12,8]}
-    
-  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)','Combo Strength: '+maxComboPow,'Strength of non-divided buffs: '+relComboPow,'Number of BSs: '+maxBSCount,'Strength of Godzamok: '+maxGodz,'Initial Raw CpS: '+iniRaw,'Years of CpS: '+Beautify(cookieGain/iniRaw/31536000),'All Consistent Buffs power: ' + consistentPow,'Cookie gained: ' + cookieGain);
-  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years of CpS, GZ: '+maxGodz.toPrecision(3)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  
+  devastatedness = NormalizeDevastatedness();
+  var clicks = Beautify(devastatedness/maxGodz)
+
+  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)','Combo Strength: '+maxComboPow,'Strength of non-divided buffs: '+relComboPow,'Number of BSs: '+maxBSCount,'Strength of Godzamok: '+maxGodz,'Initial Raw CpS: '+iniRaw,'Years of CpS: '+Beautify(cookieGain/iniRaw/31536000),'All Consistent Buffs power: ' + consistentPow,'Cookie gained: ' + cookieGain, 'Devastatedness: ' + devastatedness);
+  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years of CpS, GZ: '+maxGodz.toPrecision(3)+', clicks: '+clicks+', devastatedness: '+Beautify(devastatedness)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
   };
 
 function CycleFtHoF(reverse) {
@@ -448,7 +493,7 @@ function RedrawCCCEM(noinvalidate) {
   str+='<a class="option neato'+(iniSB?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(45):(iniSB=!iniSB); RedrawCCCEM();">Sugar Blessing '+(iniSB?'On':'Off')+'</a>';
   str+='<a class="option neato'+(seedNats?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(46):(seedNats=!seedNats);RedrawCCCEM();">Seeding GC '+(seedNats?'On':'Off')+'</a>';
   str+='<a class="option neato'+(seedTicker?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(47):(seedTicker=!seedTicker);RedrawCCCEM();">Seeding News '+(seedTicker?'On':'Off')+'</a><br>';
-  str+='<a class="option neato'+(iniSpawn?'orange':'yellow')+'" '+Game.clickStr+'="if (!isShifting()) {iniSpawn=!iniSpawn; moreButtons[2].splice(moreButtons[2].indexOf(iniTimerButton),1); if (!iniSpawn) {moreButtons[2].push(iniTimerButton)}} else {info(48);} RedrawCCCEM();">Natural GC '+(iniSpawn?'On':'Off')+'</a>';
+  str+='<a class="option neato'+(iniSpawn?'orange':'yellow')+'" '+Game.clickStr+'="if (!isShifting()) {iniSpawn=!iniSpawn; if (iniSpawn) {moreButtons[2].splice(moreButtons[2].indexOf(iniTimerButton),1)} else if (!iniSpawn) {moreButtons[2].unshift(iniTimerButton)}} else {info(48);} RedrawCCCEM();">Natural GC '+(iniSpawn?'On':'Off')+'</a>';
   str+='<a class="option neato'+(iniDO?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(49):(iniDO=!iniDO);RedrawCCCEM();">Dragon Orbs '+(iniDO?'On':'Off')+'</a>';
   str+='<a class="option neato'+(iniDEoRL?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(50):(iniDEoRL=!iniDEoRL);RedrawCCCEM();">DEoRL '+(iniDEoRL?'On':'Off')+'</a><br>';
   str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(51);} else { if (iniGC==\'R\') {iniGC=-1}; iniGC+=isCtrl()?-2:2; if (iniGC>27) iniGC=\'R\'; else if (iniGC==-1) iniGC=\'R\'; else if (iniGC<=-1) iniGC=27; } RedrawCCCEM();">GC1 '+(Game.goldenCookieChoices[iniGC])+'</a>';
