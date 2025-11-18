@@ -17,6 +17,7 @@
 //version 2.44: added orange and blue colored buttons; orange for the alternate state for on/off toggles, while blues for cycling toggles; added auto saving, which is just vanilla's auto saving, but for CCCEM settings only
 //version 2.45: added integration for the new Cast Finder buttons (pre-loading related)
 //version 2.46: Added devastatedness and fixed issue with turning on and off natural golden cookies removing p for pause UI elements
+//version 2.47: Fixed an issue where code will try to splice things with an index of -1, where it's not supposed to splice anything
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -37,7 +38,7 @@ var autoSaveCCCEM=false;
 var hasSetSettings=false;
 var pForPausePath = cccemDir+'PForPause.js';
 var castFinderPath = cccemDir+'castFinder.js';
-var testButton='<a class="option neato" '+Game.clickStr+'="for (var i in moreButtons) {moreButtons[i].splice(moreButtons[i].indexOf(testButton),1)}; RedrawCCCEM();">Remove test buttons?</a>'
+var testButton='<a class="option neato" '+Game.clickStr+'="for (var i in moreButtons) {if (moreButtons[i].indexOf(testButton)!=-1) {moreButtons[i].splice(moreButtons[i].indexOf(testButton),1)}}; RedrawCCCEM();">Remove test buttons?</a>'
 var iniTimerButton='<a class="option neatocyan" '+Game.clickStr+'="promptN=12; isShifting()?info(58):GetPrompt();">Nat Spawn Timer '+iniTimer+' frames</a><br>'
 if (typeof pForPauseButtons === 'undefined') {var pForPauseButtons=['<a class="option neato" '+Game.clickStr+'="isShifting()?info(5):(Game.LoadMod(`'+pForPausePath+'`)); if (hasHarbor && !isShifting()) { MacadamiaModList.cccem.mod.loadModRPC.send({ path: `'+pForPausePath+'` }); }">Load P for Pause</a>']}
 if (typeof castFinderButtons === 'undefined') {var castFinderButtons=['<a class="option neato" '+Game.clickStr+'="isShifting()?info(55):setupFinderIntegration(); if (hasHarbor && !isShifting()) { MacadamiaModList.cccem.mod.loadCastFinderRPC.send(); }">Load Cast Finder</a><br>']}
@@ -250,7 +251,7 @@ function GetPrompt() {
 
 function UpdateMoreButtons() {
   iniTimerButton='<a class="option neatocyan" '+Game.clickStr+'="promptN=12; isShifting()?info(58):GetPrompt();">Nat Spawn Timer '+iniTimer+' frames</a><br>'
-  moreButtons[2].splice(moreButtons[2].indexOf(iniTimerButton),1); 
+  if (moreButtons[2].indexOf(iniTimerButton)!=-1) {moreButtons[2].splice(moreButtons[2].indexOf(iniTimerButton),1)}
   moreButtons[2].push(iniTimerButton);
   };
   
@@ -493,7 +494,7 @@ function RedrawCCCEM(noinvalidate) {
   str+='<a class="option neato'+(iniSB?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(45):(iniSB=!iniSB); RedrawCCCEM();">Sugar Blessing '+(iniSB?'On':'Off')+'</a>';
   str+='<a class="option neato'+(seedNats?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(46):(seedNats=!seedNats);RedrawCCCEM();">Seeding GC '+(seedNats?'On':'Off')+'</a>';
   str+='<a class="option neato'+(seedTicker?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(47):(seedTicker=!seedTicker);RedrawCCCEM();">Seeding News '+(seedTicker?'On':'Off')+'</a><br>';
-  str+='<a class="option neato'+(iniSpawn?'orange':'yellow')+'" '+Game.clickStr+'="if (!isShifting()) {iniSpawn=!iniSpawn; if (iniSpawn) {moreButtons[2].splice(moreButtons[2].indexOf(iniTimerButton),1)} else if (!iniSpawn) {moreButtons[2].unshift(iniTimerButton)}} else {info(48);} RedrawCCCEM();">Natural GC '+(iniSpawn?'On':'Off')+'</a>';
+  str+='<a class="option neato'+(iniSpawn?'orange':'yellow')+'" '+Game.clickStr+'="if (!isShifting()) {iniSpawn=!iniSpawn; if (iniSpawn && moreButtons[2].indexOf(iniTimerButton)!=-1) {moreButtons[2].splice(moreButtons[2].indexOf(iniTimerButton),1)} else if (!iniSpawn) {moreButtons[2].unshift(iniTimerButton)}} else {info(48);} RedrawCCCEM();">Natural GC '+(iniSpawn?'On':'Off')+'</a>';
   str+='<a class="option neato'+(iniDO?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(49):(iniDO=!iniDO);RedrawCCCEM();">Dragon Orbs '+(iniDO?'On':'Off')+'</a>';
   str+='<a class="option neato'+(iniDEoRL?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(50):(iniDEoRL=!iniDEoRL);RedrawCCCEM();">DEoRL '+(iniDEoRL?'On':'Off')+'</a><br>';
   str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(51);} else { if (iniGC==\'R\') {iniGC=-1}; iniGC+=isCtrl()?-2:2; if (iniGC>27) iniGC=\'R\'; else if (iniGC==-1) iniGC=\'R\'; else if (iniGC<=-1) iniGC=27; } RedrawCCCEM();">GC1 '+(Game.goldenCookieChoices[iniGC])+'</a>';
