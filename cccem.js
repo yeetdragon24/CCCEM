@@ -31,12 +31,13 @@
 //version 2.52: added option to change garden level (garden size)
 //version 2.53: added ability to adjust starting season for the builtin cast getter
 //version 2.54: fixed a minor bug with importing saves that had elder covenant
+//version 2.55: added issue with short BS durations and successful scries backfiring, as well as devastatedness compatibility with the UI
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 //The "non-real" cccemver is for detecting whether to wipe settings
 var CCCEMVer = 'v2.53';
-var CCCEMVerReal = 'v2.54';
+var CCCEMVerReal = 'v2.55';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -514,7 +515,8 @@ function setGrimoireCasts() {
   if (typeof hasFinder === 'undefined') {
   for (var i = 0; i < ((forceFtHoF=='random' || forcedCastCount[1])?0:9999); i++) {
     Math.seedrandom(Game.seed+'/'+i);
-    if (Math.random()<(1-0.15)) {
+    var backfireVal = Math.random()
+    if (backfireVal<0.5) {
       Math.random();
       Math.random();
       if ((initCastFindSeason ?? setSeason) == 209 || (initCastFindSeason ?? setSeason) == 184) { Math.random(); } 
@@ -531,7 +533,7 @@ function setGrimoireCasts() {
       Game.Notify('Successfully found a '+forceFtHoF,'Your seed is '+Game.seed,[11,5]);
       break
       }
-    else {
+    else if (backfireVal>0.85) {
       Math.random();
       Math.random();
       if ((initCastFindSeason ?? setSeason) == 209 || (initCastFindSeason ?? setSeason) == 184) { Math.random(); } 
@@ -606,7 +608,7 @@ function SpawnGoldenCookies(noSpawn) {
   var list=[];
   for (var i in Game.Objects) {if (Game.Objects[i].amount>=10) list.push(Game.Objects[i].id);}
   var len=Math.min(list.length, iniBSCount)
-  var time=(30*effectDurMod<iniBSdur)?iniBSdur:30*effectDurMod
+  var time=(30*effectDurMod<iniBSdur)?iniBSdur:Math.ceil(30*effectDurMod);
   for (var i=0; i<len; i++) {var obj=choose(list); list.splice(list.indexOf(obj), 1); Game.gainBuff('building buff',time,Game.ObjectsById[obj].amount/10+1,obj); Game.buffs[Game.goldenCookieBuildingBuffs[Game.ObjectsById[obj].name][0]].time=iniBSdur*Game.fps; }
   };
 
@@ -619,6 +621,8 @@ function ResetAll(manual) {
     relComboPow=1
     maxBSCount=0
     maxGodz=1
+    devastatedness=0
+    maxUndevastated=0
   }
   let tempseed = Game.makeSeed();
   if (iniSeed=='R') {Game.seed=tempseed; } else {Game.seed=iniSeed;}; console.log(Game.seed);
