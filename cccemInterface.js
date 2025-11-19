@@ -19,6 +19,7 @@
 //version 2.46: Added devastatedness and fixed issue with turning on and off natural golden cookies removing p for pause UI elements
 //version 2.47: Fixed an issue where code will try to splice things with an index of -1, where it's not supposed to splice anything
 //version 2.48: added rebuyedness
+//version 2.481: hotfix to make clicks give the correct amount
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -120,7 +121,7 @@ function FindBuildingDiff() {
     {
       Game.ObjectsById[i].amount=curList[i]
     };
-  Game.recalculateGains=1
+  Game.CalculateGains();
   return cur/def
   };
 
