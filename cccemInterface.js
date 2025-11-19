@@ -18,6 +18,7 @@
 //version 2.45: added integration for the new Cast Finder buttons (pre-loading related)
 //version 2.46: Added devastatedness and fixed issue with turning on and off natural golden cookies removing p for pause UI elements
 //version 2.47: Fixed an issue where code will try to splice things with an index of -1, where it's not supposed to splice anything
+//version 2.48: added rebuyedness
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -29,6 +30,7 @@ var relComboPow=1
 var maxBSCount=0
 var maxGodz=1
 var devastatedness=0
+var rebuyedness=0
 var maxUndevastated=0
 var iniRaw=1
 var tickerCount=0
@@ -96,14 +98,41 @@ function FindAuraP(a1, a2) { //finds the strength of the a1 aura in the case tha
   return yesA1/noA1
   };
 
+function FindBuildingDiff() {
+  var cur = Game.computedMouseCps 
+  var curList = []
+  for (var obj in Game.Objects) {
+    curList.push(Game.Objects[obj].amount)
+    };
+  var buildCount=iniBC;
+  var rebuy=0
+  buildCount+=buildingRelList[rebuy+1]
+  for (var i = 0; i < Object.keys(Game.Objects).length; i++)
+    {
+      if (buildCount<0) buildCount=0;
+      Game.ObjectsById[i].amount=buildCount; 
+      buildCount+=buildingRelList[rebuy][i]
+    }
+  Game.ObjectsById[7].amount=wizCount
+  Game.CalculateGains();
+  var def = Game.computedMouseCps 
+  for (var i = 0; i < Object.keys(Game.Objects).length; i++) 
+    {
+      Game.ObjectsById[i].amount=curList[i]
+    };
+  Game.recalculateGains=1
+  return cur/def
+  };
 
 function Devastate() {
   var devastation = Game.buffs.Devastation?Game.buffs.Devastation.multClick:1
-  devastatedness+=FindUndevastated()*devastation
+  var undevastated = FindUndevastated()
+  devastatedness+=undevastated*devastation
+  rebuyedness+=undevastated*devastation*FindBuildingDiff()
   };
 
-function NormalizeDevastatedness() {
-  return devastatedness/(maxUndevastated?maxUndevastated:1)
+function NormalizeDevastatedness(value) {
+  return value/(maxUndevastated?maxUndevastated:1)
   };
 
 function FindUndevastated() { //calculates combo power based on non-devastation factors
@@ -228,11 +257,12 @@ function PrintScore() {
   else if (score>0.01) {icon=[0,5]}
   else if (score>0) {icon=[12,8]}
   
-  devastatedness = NormalizeDevastatedness();
+  devastatedness = NormalizeDevastatedness(devastatedness);
+  rebuyedness = NormalizeDevastatedness(rebuyedness)/devastatedness
   var clicks = Beautify(devastatedness/maxGodz)
 
-  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)','Combo Strength: '+maxComboPow,'Strength of non-divided buffs: '+relComboPow,'Number of BSs: '+maxBSCount,'Strength of Godzamok: '+maxGodz,'Initial Raw CpS: '+iniRaw,'Years of CpS: '+Beautify(cookieGain/iniRaw/31536000),'All Consistent Buffs power: ' + consistentPow,'Cookie gained: ' + cookieGain, 'Devastatedness: ' + devastatedness);
-  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years of CpS, GZ: '+maxGodz.toPrecision(3)+', clicks: '+clicks+', devastatedness: '+Beautify(devastatedness)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)','Combo Strength: '+maxComboPow,'Strength of non-divided buffs: '+relComboPow,'Number of BSs: '+maxBSCount,'Strength of Godzamok: '+maxGodz,'Initial Raw CpS: '+iniRaw,'Years of CpS: '+Beautify(cookieGain/iniRaw/31536000),'All Consistent Buffs power: ' + consistentPow,'Cookie gained: ' + cookieGain,'Devastatedness: ' + devastatedness,'Click multiplier from rebuys: ' + rebuyedness);
+  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years, GZ: '+maxGodz.toPrecision(3)+', clicks: '+clicks+', devastatedness: '+Beautify(devastatedness)+', rebuy: '+rebuyedness.toFixed(3)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
   };
 
 function CycleFtHoF(reverse) {
