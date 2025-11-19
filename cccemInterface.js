@@ -20,6 +20,7 @@
 //version 2.47: Fixed an issue where code will try to splice things with an index of -1, where it's not supposed to splice anything
 //version 2.48: added rebuyedness
 //version 2.481: hotfix to make clicks give the correct amount
+//version 2.482: hotfix number two to make rebuy calculation not explode on dragon's fortune
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -121,15 +122,17 @@ function FindBuildingDiff() {
     {
       Game.ObjectsById[i].amount=curList[i]
     };
-  Game.CalculateGains();
+  Game.recalculateGains=1
   return cur/def
   };
 
 function Devastate() {
   var devastation = Game.buffs.Devastation?Game.buffs.Devastation.multClick:1
+  var diff = FindBuildingDiff()
   var undevastated = FindUndevastated()
   devastatedness+=undevastated*devastation
-  rebuyedness+=undevastated*devastation*FindBuildingDiff()
+  rebuyedness+=undevastated*devastation*diff
+  Game.CalculateGains()
   };
 
 function NormalizeDevastatedness(value) {
