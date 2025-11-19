@@ -32,12 +32,13 @@
 //version 2.53: added ability to adjust starting season for the builtin cast getter
 //version 2.54: fixed a minor bug with importing saves that had elder covenant
 //version 2.55: added issue with short BS durations and successful scries backfiring, as well as devastatedness compatibility with the UI
+//version 2.56: added rebuyedness
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 //The "non-real" cccemver is for detecting whether to wipe settings
 var CCCEMVer = 'v2.53';
-var CCCEMVerReal = 'v2.55';
+var CCCEMVerReal = 'v2.56';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -622,6 +623,7 @@ function ResetAll(manual) {
     maxBSCount=0
     maxGodz=1
     devastatedness=0
+    rebuyedness=0
     maxUndevastated=0
   }
   let tempseed = Game.makeSeed();
