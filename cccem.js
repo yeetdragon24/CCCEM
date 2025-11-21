@@ -33,6 +33,7 @@
 //version 2.54: fixed a minor bug with importing saves that had elder covenant
 //version 2.55: added issue with short BS durations and successful scries backfiring, as well as devastatedness compatibility with the UI
 //version 2.56: added rebuyedness
+//version 2.57: added warning for importing below 10 buildings
 
 if (typeof CCCEMLoaded === 'undefined') {
 
@@ -385,6 +386,16 @@ function ResetGame(toFindRaw) {
     Game.Objects['Wizard tower'].levelUp(true);
     Game.Objects['Farm'].level = gardenLevel - 1;
     Game.Objects['Farm'].levelUp(true);
+    if (toFindRaw) {
+      for (var i = 0; i < Object.keys(Game.Objects).length; i++)
+        {
+          if (Game.ObjectsById[i].amount<10) {
+            Game.popups=1;
+            Game.Notify('Likely score inaccuracy','Your imported save has building numbers below 10. This may give innacurate scores, the imported save should instead have a "normal" amount of buildings, while any drastic reduction in building count is done with building override in the settings',[1,7]);
+            Game.popups=0;
+            break};
+        }
+      }
     } 
   else {
     for (var i in Game.Upgrades) 
