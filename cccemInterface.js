@@ -21,6 +21,7 @@
 //version 2.48: added rebuyedness
 //version 2.481: hotfix to make clicks give the correct amount
 //version 2.482: hotfix number two to make rebuy calculation not explode on dragon's fortune
+//version 2.49: adds ability to tinker with score, as well as mute buildings
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -196,7 +197,7 @@ function FindMaxComboPow() {
   if (maxComboPow<mComboPow) {maxComboPow=mComboPow; relComboPow=rComboPow; maxBSCount=bsCount; maxGodz=godzPow}; 
   };
 
-//Returns true if buffName are NOT newly gained from the combo (excludes scry too), otherwise return false
+//Returns true if buffName can be gotten consistently, otherwise return false
 function ConsistentBuffs(buffName, bsCount) {
   var icBuffs=['dragonflight','blood frenzy','click frenzy','frenzy','dragon harvest']
   for (var i=0; i<bsCount; i++) {icBuffs.push('building special')}
@@ -205,8 +206,8 @@ function ConsistentBuffs(buffName, bsCount) {
   index=icBuffs.indexOf('dragon harvest'); if (iniDH && index!=-1) icBuffs.splice(index, 1);
   for (var i=0; i<iniBSCount; i++) {index=icBuffs.indexOf('building special'); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniSpawn && iniGC!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
-  if (iniDO && iniGC2!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC2].toLowerCase()); if (index!=-1) icBuffs.splice(icBuffs.indexOf(index, 1))};
-  if (iniDEoRL && iniGC3!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC3].toLowerCase()); if (index!=-1) icBuffs.splice(icBuffs.indexOf(index, 1))};
+  if (iniDO && iniGC2!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC2].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
+  if (iniDEoRL && iniGC3!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC3].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
   for (var i in icBuffs) {if (icBuffs[i] == buffName) {return false}};
   return true
   };
@@ -240,7 +241,7 @@ function PrintScore() {
   var cookieGain=Game.cookiesEarned-iniCE
   var consistentPow = AllConsistentBuffsPow();
   var scoreRed=(maxComboPow*iniRaw*consistentPow/relComboPow);
-  var score=cookieGain/scoreRed;
+  var score=(cookieGain/scoreRed)*scoreCorVal;
   var icon=[12,8]
   var originalScore = score;
   score/=1.333e6;
@@ -261,12 +262,23 @@ function PrintScore() {
   else if (score>0.01) {icon=[0,5]}
   else if (score>0) {icon=[12,8]}
   
+  var scoreCorStr = ''
   devastatedness = NormalizeDevastatedness(devastatedness);
-  rebuyedness = NormalizeDevastatedness(rebuyedness)/devastatedness
-  var clicks = Beautify(devastatedness/maxGodz)
-
-  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)','Combo Strength: '+maxComboPow,'Strength of non-divided buffs: '+relComboPow,'Number of BSs: '+maxBSCount,'Strength of Godzamok: '+maxGodz,'Initial Raw CpS: '+iniRaw,'Years of CpS: '+Beautify(cookieGain/iniRaw/31536000),'All Consistent Buffs power: ' + consistentPow,'Cookie gained: ' + cookieGain,'Devastatedness: ' + devastatedness,'Click multiplier from rebuys: ' + rebuyedness);
-  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years, GZ: '+maxGodz.toPrecision(3)+', clicks: '+clicks+', devastatedness: '+Beautify(devastatedness)+', rebuy: '+rebuyedness.toFixed(3)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  rebuyedness = NormalizeDevastatedness(rebuyedness)/devastatedness;
+  var clicks = Beautify(0.000000001+(devastatedness/maxGodz));
+  if (Game.cookiesEarned<Game.handmadeCookies*1.051) {
+    var clickDiffCor = (devastatedness/maxGodz)/clicks
+    var godzScore = score/clickDiffCor
+    var scorePerClick = godzScore/(rebuyedness*clicks*maxGodz)
+    var scoreCorrection = ((rebuyedness*clicks*maxGodz) / 4250) / (godzScore)
+    scoreCorStr='\nScore per Click: '+(scorePerClick*1333000).toPrecision(4)+'\n<br>Score correction value: '+scoreCorrection.toFixed(4)
+    };
+  
+  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)\nCombo Strength: '+maxComboPow+'\nStrength of non-divided buffs: '+relComboPow+'\nNumber of BSs: '+maxBSCount+'\nStrength of Godzamok: '+maxGodz+'\nInitial Raw CpS: '+iniRaw+'\nYears of CpS: '+Beautify(cookieGain/iniRaw/31536000)+'\nAll Consistent Buffs power: ' + consistentPow+'\nCookie gained: ' + cookieGain+'\nDevastatedness: ' + devastatedness+'\nClick multiplier from rebuys: ' + rebuyedness + scoreCorStr.replace("<br>",""));
+  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years<br>Rebuy: '+rebuyedness.toFixed(3)+'<br>GZ: '+maxGodz.toPrecision(3)+'<br>Clicks: '+clicks+'<br>Devastatedness: '+Beautify(devastatedness)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  if (scoreCorStr && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
+    Game.Notify('Large score fault',scoreCorStr,[1,7]);
+    };
   };
 
 function CycleFtHoF(reverse) {
@@ -279,7 +291,7 @@ function CycleFtHoF(reverse) {
 };
 
 function GetPrompt() {
-  Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+'<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">'+'</textarea></div>',[[loc("Load"),';Game.ClosePrompt(); switch (promptN) {case 0: iniLoadSave=(l(\'textareaPrompt\').value); if (iniLoadSave.length<100) {iniLoadSave=false};break;case 1: iniSeed=(l(\'textareaPrompt\').value.trim()); if (iniSeed.length!=5) {iniSeed=\'R\'};break;case 2: iniC=Number(l(\'textareaPrompt\').value);break;case 3: iniCE=Number(l(\'textareaPrompt\').value);break;case 4: iniP=Number(l(\'textareaPrompt\').value);break;case 5: iniLumps=Number(l(\'textareaPrompt\').value);break;case 6: iniBC=Number(l(\'textareaPrompt\').value);break;case 7: wizCount=Number(l(\'textareaPrompt\').value);break;case 8: wizLevel=Number(l(\'textareaPrompt\').value);break;case 9: iniDHdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;case 10: iniBSdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;case 11: toNextTick=Number(l(\'textareaPrompt\').value.replace("s",""));break;case 12: iniTimer=Number(l(\'textareaPrompt\').value.replace("s",""));UpdateMoreButtons();break;case 13:manualBuildings[buildingSelected]=Number(l(\'textareaPrompt\').value);break;case 14:forcedCastCount[0]=Number(l(\'textareaPrompt\').value);break;case 15:iniFdur=Number(l(\'textareaPrompt\').value);break;case 16:break;case 17:setSettings(l(\'textareaPrompt\').value);hasSetSettings=true;break;case 18:DFChanceMult=Number(l(\'textareaPrompt\').value);break;case 19:gcRateMult=Number(l(\'textareaPrompt\').value);break;case 20:clickWait=Number(l(\'textareaPrompt\').value);break;case 21:gardenLevel=Number(l(\'textareaPrompt\').value);break;};RedrawCCCEM();'],loc("Nevermind")]);
+  Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+'<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">'+'</textarea></div>',[[loc("Load"),';Game.ClosePrompt(); switch (promptN) {case 0: iniLoadSave=(l(\'textareaPrompt\').value); if (iniLoadSave.length<100) {iniLoadSave=false};break;case 1: iniSeed=(l(\'textareaPrompt\').value.trim()); if (iniSeed.length!=5) {iniSeed=\'R\'};break;case 2: iniC=Number(l(\'textareaPrompt\').value);break;case 3: iniCE=Number(l(\'textareaPrompt\').value);break;case 4: iniP=Number(l(\'textareaPrompt\').value);break;case 5: iniLumps=Number(l(\'textareaPrompt\').value);break;case 6: iniBC=Number(l(\'textareaPrompt\').value);break;case 7: wizCount=Number(l(\'textareaPrompt\').value);break;case 8: wizLevel=Number(l(\'textareaPrompt\').value);break;case 9: iniDHdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;case 10: iniBSdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;case 11: toNextTick=Number(l(\'textareaPrompt\').value.replace("s",""));break;case 12: iniTimer=Number(l(\'textareaPrompt\').value.replace("s",""));UpdateMoreButtons();break;case 13:manualBuildings[buildingSelected]=Number(l(\'textareaPrompt\').value);break;case 14:forcedCastCount[0]=Number(l(\'textareaPrompt\').value);break;case 15:iniFdur=Number(l(\'textareaPrompt\').value);break;case 16:break;case 17:setSettings(l(\'textareaPrompt\').value);hasSetSettings=true;break;case 18:DFChanceMult=Number(l(\'textareaPrompt\').value);break;case 19:gcRateMult=Number(l(\'textareaPrompt\').value);break;case 20:clickWait=Number(l(\'textareaPrompt\').value);break;case 21:gardenLevel=Number(l(\'textareaPrompt\').value);break;case 22:scoreCorVal=Number(l(\'textareaPrompt\').value);break;};RedrawCCCEM();'],loc("Nevermind")]);
 	l('textareaPrompt').focus();
   };
 
@@ -355,10 +367,10 @@ var Messages = [
     ['Lumps', 'The amount of Sugar lumps you start with each attempt.', 29, 14],
     ['Lump type', 'The type of Sugar lump you start with each attempt.', 29, 27],
     ['Building count anchor', 'The amount of Cursors you start with each attempt. Then, the amount of every other building is adjusted accordingly so that a roughly equal amount of cookies is spent on each building. <br>Can be partially overridden by other options.', 33, 6],
-    ['Override', 'The specific building to override count. <br>Once overridden, the building count anchor will no longer be used to determine the amount of that specific building.<br>Does not include Wizard towers; that is managed by the Wizard towers option.', 35, 33],
-    ['Overriding number', 'The value assigned to the building being overridden. The value will be the amount of that building you start with each attempt.<br>An assignment of 0 is equivalent to override disabled.<br>To override a value of 0, use any negative number.', 29, 21], 
+    ['Override and mute', 'The specific building to override or mute. <br>Once overridden, the building count anchor will no longer be used to determine the amount of that specific building.<br>Override does not include Wizard tower count; that is managed by the Wizard towers option.', 35, 33],
+    ['Overriding count', 'The number of that building you start with each attempt.<br>An assignment of 0 is equivalent to override disabled.<br>To override a value of 0, use any negative number.', 29, 21], 
     ['Elder Battalion strategy', 'Changes the building distribution to better fit an Elder Battalion strategy.', 1, 25],
-    ['Elder Battalion rebuy', 'Changes the score evaluation to evaluate an EB rebuy strategy.', 1, 27],
+    ['Elder Battalion rebuy', 'Changes the building distribution to better fit a strategy rebuying after godzamok.', 1, 27],
     ['Force cast count', 'Forces the Grimoire\'s Spells casted all time stat to be whatever you choose. This option disables the FtHoF outcome finder if enabled.', 22, 11],
     ['Forced cast count', 'The value to assign to the Grimoire\'s Spells casted all time. Only functional if the Force cast count option is On.', 30, 5],
     ['Wizard towers', 'The amount of Wizard towers you start with each attempt.', 17, 0],
@@ -396,7 +408,6 @@ var Messages = [
     ['First Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the <b>initial natural Golden cookie</b> spawn.<br>Only applicable if \'Natural GC\' is On.', 0, 10],
     ['Second Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the <b>initial Dragon Orbs Golden cookie</b> spawn.<br>Only applicable if \'Dragon Orbs\' is On.', 1, 10],
     ['Third Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the <b>initial, successful invoke of the Distilled Essence of Redoubled Luck</b>.<br>Only applicable if \'DEoRL\' is On.', 2, 10],
-    ['Save current settings', 'Saves the settings in the CCCEM interface to the save before CCCEM was loaded, as mod data.<br>You can change the saved setting by saving again.<br>You can remove it by clearing mod data with the options menu while CCCEM is not loaded.', 25, 7]
     ['Load Cast Finder', 'Loads the Grimoire Cast Finder mod, which allows you to program specific strings of cast outcomes to find.<br>Disables the FtHoF button on load.', 17, 27],
     
     ['Open Cast Finder', 'Opens the Cast Finder. Inputs will be ran upon pressing Try Again, unless auto execute is off.', 17, 14],
@@ -425,7 +436,12 @@ var Messages = [
     ['Golden cookie spawnrate', 'Sets a multiplier to the spawn rate of golden cookies.', 10, 14],
     ['Click cooldown', 'The minimum amount of milliseconds between each click.', 0, 15],
     ['Garden level', 'The level of your Farm, which controls the size of your garden.', 2, 26],
-    ['Scried season', 'The season that the starting effect is scried (or predicted) in.', 16, 6]
+    ['Scried season', 'The season that the starting effect is scried (or predicted) in.', 16, 6],
+    ['Correction value', 'The value the score should be multiplied by to better match standard values.', 16, 5],
+    ['Score correction notifications', 'Whether to notify when the score does not conform to the baseline. Will only be given if most of your cookies are made from clicking', 1, 7],
+    ['Save current settings', 'Saves the settings in the CCCEM interface to the save before CCCEM was loaded, as mod data.<br>You can change the saved setting by saving again.<br>You can remove it by clearing mod data with the options menu while CCCEM is not loaded.', 25, 7],
+    ['Mute', 'Whether a building should start muted. Minigames will always unmute unless that option is disabled.', 28, 6],
+    ['Unmute minigames', 'Forces minigames to be unmuted on reset. If disabled, minigames can be freely muted and unmuted with the mute option.', 23, 15]
            ]
 
 var infogot = 0;
@@ -471,15 +487,19 @@ function RedrawCCCEM(noinvalidate) {
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=2; isShifting()?info(7):GetPrompt();">Cookies '+(iniC.toPrecision(1))+'</a><br>';
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=3; isShifting()?info(8):GetPrompt();">CookiesBTA '+(iniCE.toPrecision(1))+'</a>';
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=4; isShifting()?info(9):GetPrompt();">Prestige '+(iniP.toPrecision(1))+'</a><br>';
+  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=22; isShifting()?info(80):GetPrompt();">Score mult '+(scoreCorVal)+'</a>';
+  str+='<a class="option neato'+(scoreCorNotify?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(81):scoreCorNotify=!scoreCorNotify;RedrawCCCEM();">Score info '+(scoreCorNotify)+'</a><br>';
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=5; isShifting()?info(10):GetPrompt();">Lumps '+(iniLumps)+'</a>';
   let lumpTypes = ["Normal", "Bifurcated", "Golden", "Meaty", "Caramel"];
   str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(11):(isCtrl()?chooseLump--:chooseLump++); if (chooseLump>4) chooseLump=0; else if (chooseLump<0) chooseLump=4; RedrawCCCEM();">Lump type '+lumpTypes[chooseLump]+'</a>';
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=20; isShifting()?info(77):GetPrompt();">Click cooldown '+(clickWait)+'ms</a><br>';
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=6; isShifting()?info(12):GetPrompt();">Building count anchor '+(iniBC)+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(13):(isCtrl()?buildingSelected--:buildingSelected++); if (buildingSelected > 19) { buildingSelected = 0; } else if (buildingSelected < 0) { buildingSelected = 19; } if (buildingSelected == 7) { isCtrl()?buildingSelected--:buildingSelected++; }RedrawCCCEM();">Override '+(Game.ObjectsById[buildingSelected].name)+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=13; isShifting()?info(14):GetPrompt();">Overriding number '+(manualBuildings[buildingSelected])+'</a><br>';
   str+='<a class="option neato'+(useEB?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(15):(useEB=!useEB); RedrawCCCEM();">'+(useEB?'EB List':'No EB')+'</a>';
-  str+='<a class="option neato'+((useRebuy/2)?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(16):(useRebuy+=2); if (useRebuy>2) useRebuy=0; RedrawCCCEM();">'+(useRebuy?'Rebuy':'No Rebuy')+'</a>';
+  str+='<a class="option neato'+((useRebuy/2)?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(16):(useRebuy+=2); if (useRebuy>2) useRebuy=0; RedrawCCCEM();">'+(useRebuy?'Rebuy':'No Rebuy')+'</a><br>';
+  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(13):(isCtrl()?buildingSelected--:buildingSelected++); if (buildingSelected > 19) { buildingSelected = 0; } else if (buildingSelected < 0) { buildingSelected = 19; } RedrawCCCEM();">'+(Game.ObjectsById[buildingSelected].name)+':</a>';
+  if (buildingSelected!=7) {str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=13; isShifting()?info(14):GetPrompt();">Overriding number '+(manualBuildings[buildingSelected])+'</a>'};
+  str+='<a class="option neato'+((muteBuildings[buildingSelected])?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(83):muteBuildings[buildingSelected]=!muteBuildings[buildingSelected];RedrawCCCEM();">'+((muteBuildings[buildingSelected])?"Muted":"Unmuted")+'</a>';
+  str+='<a class="option neato'+(unmuteMinigames?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(84):unmuteMinigames=!unmuteMinigames;RedrawCCCEM();">Minigames '+(unmuteMinigames?"Unmuted":"Muteable")+'</a><br>'
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=7; isShifting()?info(19):GetPrompt();">Wizard towers '+(wizCount)+'</a>';
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=8; isShifting()?info(20):GetPrompt();">Tower Level '+(wizLevel)+'</a>';
   str+='<a class="option neato'+((!buyOption1)?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(21):(buyOption1?buyOption1--:buyOption1++); RedrawCCCEM();">'+(buyOption1?'Sell':'Buy')+'</a>';
@@ -545,7 +565,7 @@ function RedrawCCCEM(noinvalidate) {
     
     
   str+='<div class="line"></div>';
-  str+='<a class="option neatolime" '+Game.clickStr+'="isShifting()?info(54):customSave();">Save current settings</a>';
+  str+='<a class="option neatolime" '+Game.clickStr+'="isShifting()?info(82):customSave();">Save current settings</a>';
   str+='<a class="option neato'+(autoSaveCCCEM?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(65):(autoSaveCCCEM=!autoSaveCCCEM);RedrawCCCEM();">Auto save '+(autoSaveCCCEM?'On':'Off')+'</a>';
   str+='</div>';
   l('devConsole').innerHTML=str;
