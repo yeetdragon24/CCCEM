@@ -39,7 +39,7 @@ if (typeof CCCEMLoaded === 'undefined') {
 
 //The "non-real" cccemver is for detecting whether to wipe settings
 var CCCEMVer = 'v2.53';
-var CCCEMVerReal = 'v2.56';
+var CCCEMVerReal = 'v2.57';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
