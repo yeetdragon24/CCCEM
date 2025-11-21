@@ -34,12 +34,13 @@
 //version 2.55: added issue with short BS durations and successful scries backfiring, as well as devastatedness compatibility with the UI
 //version 2.56: added rebuyedness
 //version 2.57: added warning for importing below 10 buildings
+//version 2.58: added ability to normalize score
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 //The "non-real" cccemver is for detecting whether to wipe settings
-var CCCEMVer = 'v2.53';
-var CCCEMVerReal = 'v2.57';
+var CCCEMVer = 'v2.58';
+var CCCEMVerReal = 'v2.58';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -96,10 +97,12 @@ var boughtSF=0 //0 or 1, 0 to make SF available
 var boughtCE=0 //make chocolate egg available
 var setSeason=183 //183 makes it halloween, set to the id of the season switcher toggle
 var setPledge=true //true to automatically pledge at the start, otherwise false
-var muteBuildings=[1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1] //list of which buildings to mute, 1 mutes
+var muteBuildings=[1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1] //list of which buildings to mute, 1 mutes
 var unmuteMinigames=true //unmutes all buildings with minigames, overrides muteBuildings
 var buyOption1=1 //set to 0 to have buy selected and 1 to have sell selected at the start
 var buyOption2=4 //set to 2 to have "1" selected, 3 for "10", 4 for "100", 5 for "all"
+var scoreCorVal=1; //value to multiply the score by in order to normalize it
+var scoreCorNotify=true; //whether to get notified about score inaccuracies
 var DFChanceMult=1; //dragonflight buff chance multiplier (also multiplies dh chance but who cares about that)
 var gcRateMult=1; //golden cookie spawn rate multiplier
 var clickWait=20; //requires this amount of milliseconds after each click to have passed to click again
@@ -238,6 +241,7 @@ function PresetSettingsGrail() {
   iniBC=1095; 
   wizCount=951; 
   wizLevel=10; 
+  manualBuildings=  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
   buildingRelList=  [[-8, -33, -17, -17, -17, -26, -13, -20, -19, -19, -14, -23, -20, -12, -16, -32, -47, -39, -24],0,
                     [-18, -22, -17, -17, -17, -19, -21, -18, -24, -16, -13, -27, -12, -15, -17, -34, -46, -33, -31],0]
   buildingRelListEB=[[-4, -36, -17, -17, -18, -22, -17, -19, -19, -11, -25, -20, -20, -15, -16, -26, -51, -39, -28],-2,
@@ -470,7 +474,7 @@ function ResetMinigames(toFindRaw) {
     {
       var me=Game.ObjectsById[i];
       if (me.minigame && me.minigame.onRuinTheFun) me.minigame.onRuinTheFun();
-      if (muteBuildings[i]==0 || me.minigame && unmuteMinigames) {me.muted=0;me.switchMinigame(1)} else {me.muted=1;};
+      if (!muteBuildings[i] || me.minigame && unmuteMinigames) {me.muted=0;me.switchMinigame(1)} else {me.muted=1;};
     }
   Game.lumps=iniLumps;
   Game.Objects['Wizard tower'].minigame.magicM=Math.floor(4+Math.pow(wizCount,0.6)+Math.log((wizCount+(wizLevel-1)*10)/15+1)*15);
@@ -725,7 +729,8 @@ function getSettingsCode() {
     str += p.altDraw + s + p.askLumps + s + p.autosave + s + p.autoupdate + s + p.bgMusic + s + p.cloudSave + s + p.cookiesound + s + p.crates + s + p.cursors + s + p.customGrandmas + s + p.discordPresence + s + p.extraButtons + s + p.fancy + s + p.filters + s + p.focus + s + p.milk + s + p.monospace + s + p.notif + s + p.notScary + s + p.numbers + s + p.particles + s + p.screenreader + s + p.showBackupWarning + s + p.wobbly + s
     console.log('volume: '+ Game.volume);
     str += Game.volume + s + Game.volumeMusic + s
-    str += autoSaveCCCEM + s + DFChanceMult + s + gcRateMult + s + clickWait + s + gardenLevel + s + ((initCastFindSeason == null)?'n':initCastFindSeason);
+    str += autoSaveCCCEM + s + DFChanceMult + s + gcRateMult + s + clickWait + s + gardenLevel + s + ((initCastFindSeason == null)?'n':initCastFindSeason) + s;
+    str += scoreCorVal + s + scoreCorNotify
     str += ">>ContainerEnd<<"
     
     return str;
@@ -770,7 +775,7 @@ Game.registerMod('CCCEMContainer', {
         Game.deleteModData('CCCEMContainer'); Game.WriteSave(); return 0;
     }    
     if (strs[0] !== CCCEMVer && noNotify) { 
-    	Game.Notify('Warning', 'You imported a settings code from an older version, which may cause some values to be set to bad values. Re-setting such values should usually fix the problem. Code version: '+strs[0]+'; current version: '+strs[1]+'.', 0);
+    	Game.Notify('Warning', 'You imported a settings code from an older version, which may cause some values to be set to bad values. Re-setting such values should usually fix the problem. Code version: '+strs[0]+'; current version: '+CCCEMVer+'.', 0);
     }
     if (strs.length < 123) { return 0; }
     
@@ -808,6 +813,8 @@ Game.registerMod('CCCEMContainer', {
       clickWait = strs[124];
       strs[125] && (gardenLevel = strs[125]);
       strs[126] && (initCastFindSeason = (typeof strs[126] == 'string' && strs[126][0] == 'n')?null:parseInt(strs[126]));
+      scoreCorVal = strs[127]?strs[127]:1
+      scoreCorNotify = strs[128]?strs[128]:true
     }
   }
     })
