@@ -22,6 +22,7 @@
 //version 2.481: hotfix to make clicks give the correct amount
 //version 2.482: hotfix number two to make rebuy calculation not explode on dragon's fortune
 //version 2.49: adds ability to tinker with score, as well as mute buildings
+//version 2.491: bugfix for rebuy calculation when a buff dies, improved score display again
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -102,6 +103,7 @@ function FindAuraP(a1, a2) { //finds the strength of the a1 aura in the case tha
   };
 
 function FindBuildingDiff() {
+  Game.CalculateGains();
   var cur = Game.computedMouseCps 
   var curList = []
   for (var obj in Game.Objects) {
@@ -271,11 +273,11 @@ function PrintScore() {
     var godzScore = score/clickDiffCor
     var scorePerClick = godzScore/(rebuyedness*clicks*maxGodz)
     var scoreCorrection = ((rebuyedness*clicks*maxGodz) / 4250) / (godzScore)
-    scoreCorStr='\nScore per Click: '+(scorePerClick*1333000).toPrecision(4)+'\n<br>Score correction value: '+scoreCorrection.toFixed(4)
+    scoreCorStr='\nScore per Click: '+(scorePerClick*1333000).toPrecision(4)+'\n<br>Score correction value: '+scoreCorrection.toFixed(4)+'\n<br>​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ Set score mult to: '+(scoreCorrection*scoreCorVal).toFixed(4)
     };
   
-  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)\nCombo Strength: '+maxComboPow+'\nStrength of non-divided buffs: '+relComboPow+'\nNumber of BSs: '+maxBSCount+'\nStrength of Godzamok: '+maxGodz+'\nInitial Raw CpS: '+iniRaw+'\nYears of CpS: '+Beautify(cookieGain/iniRaw/31536000)+'\nAll Consistent Buffs power: ' + consistentPow+'\nCookie gained: ' + cookieGain+'\nDevastatedness: ' + devastatedness+'\nClick multiplier from rebuys: ' + rebuyedness + scoreCorStr.replace("<br>",""));
-  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years<br>Rebuy: '+rebuyedness.toFixed(3)+'<br>GZ: '+maxGodz.toPrecision(3)+'<br>Clicks: '+clicks+'<br>Devastatedness: '+Beautify(devastatedness)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)\nCombo Strength: '+maxComboPow+'\nStrength of non-divided buffs: '+relComboPow+'\nNumber of BSs: '+maxBSCount+'\nStrength of Godzamok: '+maxGodz+'\nInitial Raw CpS: '+iniRaw+'\nYears of CpS: '+Beautify(cookieGain/iniRaw/31536000)+'\nAll Consistent Buffs power: ' + consistentPow+'\nCookie gained: ' + cookieGain+'\nDevastatedness: ' + devastatedness+'\nClick multiplier from rebuys: ' + rebuyedness + scoreCorStr.replace("<br>","").replace("​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ",""));
+  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years<br>GZ: '+maxGodz.toPrecision(3)+'<br>​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ Clicks: '+clicks+'<br>​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ Devastatedness: '+Beautify(devastatedness)+'<br>​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ Rebuy: '+rebuyedness.toFixed(3)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
   if (scoreCorStr && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
     Game.Notify('Large score fault',scoreCorStr,[1,7]);
     };
