@@ -35,12 +35,13 @@
 //version 2.56: added rebuyedness
 //version 2.57: added warning for importing below 10 buildings
 //version 2.58: added ability to normalize score
+//version 2.59: silencing build count under 9 popup if notif setting set to silent
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 //The "non-real" cccemver is for detecting whether to wipe settings
 var CCCEMVer = 'v2.58';
-var CCCEMVerReal = 'v2.58';
+var CCCEMVerReal = 'v2.59';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -393,7 +394,7 @@ function ResetGame(toFindRaw) {
     if (toFindRaw) {
       for (var i = 0; i < Object.keys(Game.Objects).length; i++)
         {
-          if (Game.ObjectsById[i].amount<10) {
+          if (Game.ObjectsById[i].amount<10 && scoreCorNotify) {
             Game.popups=1;
             Game.Notify('Likely score inaccuracy','Your imported save has building numbers below 10. This may give innacurate scores, the imported save should instead have a "normal" amount of buildings, while any drastic reduction in building count is done with building override in the settings',[1,7]);
             Game.popups=0;
