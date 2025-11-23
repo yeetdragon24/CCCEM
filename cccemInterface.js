@@ -23,6 +23,7 @@
 //version 2.482: hotfix number two to make rebuy calculation not explode on dragon's fortune
 //version 2.49: adds ability to tinker with score, as well as mute buildings
 //version 2.491: bugfix for rebuy calculation when a buff dies, improved score display again
+//version 2.5: tidied up the printscore function and tried fixing more score mult calculation issues
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -56,10 +57,14 @@ var invalidateScore=0
 if (typeof CCCEMUILoaded === 'undefined') {
   var CCCEMUILoaded=1
   Game.registerHook('click', () => {Devastate();}); //calculates devastatedness when you click
+  Game.registerHook('logic', () => {if (Game.recalculateGains) Game.CalculateGains();}); //moves the recalculation check to later in the logic function
 
   //prevents you from using OpenSesame as this mod removes the debugLog to make it look nice, which breaks the game if you run OpenSesame.
   eval("Game.OpenSesame="+Game.OpenSesame.toString().replace("var str='';","return")) 
   if (l('debugLog')) {l('debugLog').remove();};
+  
+  //diasbles the first CpS recalculation
+  eval("Game.Logic="+Game.Logic.toString().replace("if (Game.recalculateGains) Game.CalculateGains();",""))
   
   //disable saving
   eval("Game.Logic="+Game.Logic.toString().replace("if (canSave) Game.WriteSave();","if (canSave) customSave();"))
@@ -131,11 +136,13 @@ function FindBuildingDiff() {
 
 function Devastate() {
   var devastation = Game.buffs.Devastation?Game.buffs.Devastation.multClick:1
+  //var cookiesFromClick = Game.computedMouseCps
   var diff = FindBuildingDiff()
   var undevastated = FindUndevastated()
+  Game.CalculateGains()
   devastatedness+=undevastated*devastation
   rebuyedness+=undevastated*devastation*diff
-  Game.CalculateGains()
+  //console.log(cookiesFromClick, undevastated, devastation, diff)
   };
 
 function NormalizeDevastatedness(value) {
@@ -241,6 +248,7 @@ function AllConsistentBuffsPow() {
 function PrintScore() {
   if (!produceGrades) { return; }
   var cookieGain=Game.cookiesEarned-iniCE
+  var clickGain=Game.handmadeCookies-iniHM
   var consistentPow = AllConsistentBuffsPow();
   var scoreRed=(maxComboPow*iniRaw*consistentPow/relComboPow);
   var score=(cookieGain/scoreRed)*scoreCorVal;
@@ -264,22 +272,50 @@ function PrintScore() {
   else if (score>0.01) {icon=[0,5]}
   else if (score>0) {icon=[12,8]}
   
+  var z ='​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ '
+  var clickScore=score*(clickGain/cookieGain)*1.05
   var scoreCorStr = ''
   devastatedness = NormalizeDevastatedness(devastatedness);
   rebuyedness = NormalizeDevastatedness(rebuyedness)/devastatedness;
-  var clicks = Beautify(0.000000001+(devastatedness/maxGodz));
-  if (Game.cookiesEarned<Game.handmadeCookies*1.051) {
+  var clicks = Math.trunc(0.000000001+(devastatedness/maxGodz));
+
+  var logArr = []
+  logArr.push('Score: ' + originalScore.toPrecision(3) + ' (' + (score*100).toFixed(1) + '%)<br>')
+  logArr.push('Years of CpS: ' + Beautify(cookieGain/iniRaw/31536000) +'<br>')
+  logArr.push('Strength of Godzamok: ' + maxGodz.toPrecision(3) +'<br>')
+  logArr.push(z+'Clicks: ' + Beautify(clicks) +'<br>')
+  logArr.push(z+'Devastatedness: ' + Beautify(devastatedness) +'<br>')
+  logArr.push(z+'Click multiplier from rebuys: ' + rebuyedness.toFixed(3) +'<br>')
+  logArr.push('<br>')
+  logArr.push('Combo Strength: ' + Beautify(maxComboPow) +'<br>')
+  logArr.push('Strength of non-divided buffs: ' + Beautify(relComboPow) +'<br>')
+  logArr.push('All Consistent Buffs power: ' + Beautify(consistentPow) +'<br>')
+  logArr.push('Number of BSs: ' + maxBSCount +'<br>')
+  logArr.push('<br>')
+  logArr.push('Cookie gained: ' + Beautify(cookieGain) +'<br>')
+  logArr.push('Handmade gain: ' + Beautify(clickGain) +'<br>')
+  logArr.push('Initial Raw CpS: ' + Beautify(iniRaw) +'<br>')
+
+
+
+  if (clickScore) {
     var clickDiffCor = (devastatedness/maxGodz)/clicks
-    var godzScore = score/clickDiffCor
-    var scorePerClick = godzScore/(rebuyedness*clicks*maxGodz)
-    var scoreCorrection = ((rebuyedness*clicks*maxGodz) / 4250) / (godzScore)
-    scoreCorStr='\nScore per Click: '+(scorePerClick*1333000).toPrecision(4)+'\n<br>Score correction value: '+scoreCorrection.toFixed(4)+'\n<br>​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ Set score mult to: '+(scoreCorrection*scoreCorVal).toFixed(4)
+    var godzScore = clickScore/clickDiffCor
+    var trueDevastated = rebuyedness*clicks*maxGodz
+    var scorePerClick = godzScore/(trueDevastated)
+    var scoreCorrection = (trueDevastated / 4250) / (godzScore)
+    logArr.push('<br>')
+    logArr.push('Score per Click: '+(scorePerClick*1333000).toPrecision(4) +'<br>')
+    logArr.push('Score correction value: '+scoreCorrection.toFixed(4) +'<br>')
+    logArr.push(z+'Set score mult to: '+(scoreCorrection*scoreCorVal).toFixed(4) +'<br>')
     };
-  
-  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)\nCombo Strength: '+maxComboPow+'\nStrength of non-divided buffs: '+relComboPow+'\nNumber of BSs: '+maxBSCount+'\nStrength of Godzamok: '+maxGodz+'\nInitial Raw CpS: '+iniRaw+'\nYears of CpS: '+Beautify(cookieGain/iniRaw/31536000)+'\nAll Consistent Buffs power: ' + consistentPow+'\nCookie gained: ' + cookieGain+'\nDevastatedness: ' + devastatedness+'\nClick multiplier from rebuys: ' + rebuyedness + scoreCorStr.replaceAll("<br>","").replaceAll("​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ",""));
-  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years<br>GZ: '+maxGodz.toPrecision(3)+'<br>​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ Clicks: '+clicks+'<br>​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ Devastatedness: '+Beautify(devastatedness)+'<br>​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ Rebuy: '+rebuyedness.toFixed(3)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
-  if (scoreCorStr && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
-    Game.Notify('Large score fault',scoreCorStr,[1,7]);
+
+  logStr=''
+  for (i in logArr) logStr+=logArr[i].replace("<br>","\n").replace(z,"");
+  console.log(logStr)
+  if (invalidateScore==0) {Game.Notify(logArr[0],logArr[1]+logArr[2]+logArr[3]+logArr[4]+logArr[5].replace('<br>','')+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  if (clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
+    Game.Notify('Large score fault',logArr[logArr.length-3]+logArr[logArr.length-2]+logArr[logArr.length-1],[1,7]);
     };
   };
 
