@@ -36,17 +36,19 @@
 //version 2.57: added warning for importing below 10 buildings
 //version 2.58: added ability to normalize score
 //version 2.59: silencing build count under 9 popup if notif setting set to silent
+//version 2.60: added check for handmade cookies
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 //The "non-real" cccemver is for detecting whether to wipe settings
 var CCCEMVer = 'v2.58';
-var CCCEMVerReal = 'v2.59';
+var CCCEMVerReal = 'v2.60';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
 var iniC=4e69 //initial cookie count
 var iniCE=1e78 //cookies earned count
+var iniHM=iniCE //cookies handmade
 var iniP=1e22 //prestige level
 var iniLumps=105 //lump count
 var iniBC=1095; //cursor amount, used to determine other building amounts; gets overridden by manual sets
@@ -386,6 +388,7 @@ function ResetGame(toFindRaw) {
     Game.ImportSaveCode(iniLoadSave); 
     noLoadCCCEMData=false;
     iniCE=Game.cookiesEarned
+    iniHM=Game.handmadeCookies
     Game.specialTab=isSpecialTab
     Game.Objects['Wizard tower'].level = wizLevel - 1;
     Game.Objects['Wizard tower'].levelUp(true);
@@ -427,6 +430,8 @@ function ResetGame(toFindRaw) {
     Game.BuildingsOwned=num
     Game.cookies=iniC;
     Game.cookiesEarned=iniCE;
+    iniHM=iniCE;
+    Game.handmadeCookies=iniHM;
     Game.prestige=iniP;
     
     for (var i = 0; i < Object.keys(Game.Objects).length; i++)
